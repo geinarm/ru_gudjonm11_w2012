@@ -1,7 +1,7 @@
 /*************************************************************************
   *************************************************************************/
 
-import java.util.Arrays;
+import java.util.ArrayList;
 
 public class KdTree {
     Node root = null;
@@ -9,11 +9,13 @@ public class KdTree {
     private class Node
     {
     	public Point2D value;
+    	public double key;
     	public Node left, right;
     	
-    	public Node(Point2D p)
+    	public Node(Point2D p, double key)
     	{
     		this.value = p;
+    		this.key = key;
     	}
     }
 	
@@ -30,7 +32,7 @@ public class KdTree {
 	public void insert(Point2D p)
 	{
 		if(!contains(p)){
-			if(root == null) root = new Node(p);
+			if(root == null) root = new Node(p, p.x());
 			else insertAt(root, p, p.x());
 		}
 	}
@@ -39,21 +41,21 @@ public class KdTree {
 	{
 		if(key == p.x()){
 			if(key < n.value.x()){
-				if(n.left == null) n.left = new Node(p);
+				if(n.left == null) n.left = new Node(p, p.y());
 				else insertAt(n.left, p, p.y());
 			}
 			else{
-				if(n.right == null) n.right = new Node(p);
+				if(n.right == null) n.right = new Node(p, p.y());
 				else insertAt(n.right, p, p.y());
 			}
 		}
 		else{
 			if(key < n.value.y()){
-				if(n.left == null) n.left = new Node(p);
+				if(n.left == null) n.left = new Node(p, p.x());
 				else insertAt(n.left, p, p.x());
 			}
 			else{
-				if(n.right == null) n.right = new Node(p);
+				if(n.right == null) n.right = new Node(p, p.x());
 				else insertAt(n.right, p, p.x());
 			}
 		}
@@ -98,7 +100,49 @@ public class KdTree {
 	
 	public Iterable<Point2D> range(RectHV rect)
 	{
-		return null;
+    	StdDraw.setPenColor(StdDraw.ORANGE);
+		StdDraw.filledCircle(root.value.x(), root.value.y(), 0.02);
+		StdDraw.setPenColor();
+		
+		return rangeAt(root, rect, new RectHV(0.0, 0.0, 1.0, 1.0));
+	}
+	
+	private ArrayList<Point2D> rangeAt(Node n, RectHV rect, RectHV searchRect)
+	{
+		ArrayList<Point2D> points = new ArrayList<Point2D>();
+		if(n == null)
+			return points;
+		
+		if(rect.contains(n.value))
+			points.add(n.value);
+		
+		if(n.key == n.value.x()){
+			
+			//Vertical
+			RectHV left = new RectHV(searchRect.xmin(), searchRect.ymin(), n.key, searchRect.ymax());
+			RectHV right = new RectHV(n.key, searchRect.ymin(), searchRect.xmax(), searchRect.ymax());
+			
+			if(rect.intersects(left)){
+				points.addAll(rangeAt(n.left, rect, left));
+			}
+			if(rect.intersects(right)){
+				points.addAll(rangeAt(n.right, rect, right));
+			}
+		}
+		else{
+			//Horizontal
+			RectHV top = new RectHV(searchRect.xmin(), n.key, searchRect.xmax(), searchRect.ymax());
+			RectHV bottom = new RectHV(searchRect.xmin(), searchRect.ymin(), searchRect.xmax(), n.key);
+			
+			if(rect.intersects(bottom)){
+				points.addAll(rangeAt(n.left, rect, bottom));
+			}
+			if(rect.intersects(top)){
+				points.addAll(rangeAt(n.right, rect, top));
+			}
+		}
+		
+		return points;
 	}
 	
    	public Point2D nearest(Point2D p)
@@ -116,23 +160,36 @@ public class KdTree {
     	RectHV rect = new RectHV(0.5, 0.1, 0.8, 0.9);
     	Point2D point = new Point2D(0.6, 0.7);
     	
+    	StdDraw.show(0);
+    	StdDraw.clear();
+    	
     	for(int i=0; i < pointCount; i++){
             double x = StdIn.readDouble(), y = StdIn.readDouble();
             set.insert(new Point2D(x,y));
-            //StdDraw.filledCircle(x, y, 0.01);
+            StdDraw.filledCircle(x, y, 0.01);
     	}
     	
     	StdOut.println(set.isEmpty());
     	
     	StdOut.println(set.contains(new Point2D(0.5, 0.5)));
     	
-    	/*Iterable<Point2D> inRect = set.range(rect);
+    	Iterable<Point2D> inRect = set.range(rect);
     	for(Point2D p : inRect){
     		StdOut.println(p);
-    		StdDraw.filledCircle(p.x(), p.y(), 0.02);
-    	}*/
+    		StdDraw.setPenColor(StdDraw.GREEN);
+    		StdDraw.filledCircle(p.x(), p.y(), 0.01);
+    		StdDraw.setPenColor();
+    	}
+    	
+    	rect.draw();
+    	StdDraw.setPenColor(StdDraw.RED);
+    	StdDraw.filledCircle(point.x(), point.y(), 0.01);
+    	StdDraw.setPenColor();
+    	//StdDraw.line(point.x(), point.y(), closest.x(), closest.y());
+    	//StdDraw.filledCircle(closest.x(), closest.y(), 0.02);
     	
     	//Point2D closest = set.nearest(point);
+    	StdDraw.show(50);
 
     	
     	/*

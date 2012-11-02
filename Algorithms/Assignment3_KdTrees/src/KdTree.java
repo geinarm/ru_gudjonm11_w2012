@@ -2,6 +2,7 @@
   *************************************************************************/
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class KdTree {
     Node root = null;
@@ -16,6 +17,8 @@ public class KdTree {
     	{
     		this.value = p;
     		this.key = key;
+    		this.left = null;
+    		this.right = null;
     	}
     }
 	
@@ -33,63 +36,62 @@ public class KdTree {
 	{
 		if(!contains(p)){
 			if(root == null) root = new Node(p, p.x());
-			else insertAt(root, p, p.x());
+			else insertAt(root, p);
 		}
 	}
 	
-	private void insertAt(Node n, Point2D p, double key)
+	private void insertAt(Node n, Point2D p)
 	{
-		if(key == p.x()){
-			if(key < n.value.x()){
+		if(n.key == n.value.x()){
+			if(p.x() < n.value.x()){
 				if(n.left == null) n.left = new Node(p, p.y());
-				else insertAt(n.left, p, p.y());
+				else insertAt(n.left, p);
 			}
 			else{
 				if(n.right == null) n.right = new Node(p, p.y());
-				else insertAt(n.right, p, p.y());
+				else insertAt(n.right, p);
 			}
 		}
 		else{
-			if(key < n.value.y()){
+			if(p.y() < n.value.y()){
 				if(n.left == null) n.left = new Node(p, p.x());
-				else insertAt(n.left, p, p.x());
+				else insertAt(n.left, p);
 			}
 			else{
 				if(n.right == null) n.right = new Node(p, p.x());
-				else insertAt(n.right, p, p.x());
+				else insertAt(n.right, p);
 			}
 		}
 	}
 	
 	public boolean contains(Point2D p)
 	{
-		return findAt(root, p, p.x());
+		return findAt(root, p);
 	}
 	
-	private boolean findAt(Node n, Point2D p, double key)
+	private boolean findAt(Node n, Point2D p)
 	{
 
-		if(n == null)
-		{
+		if(n == null){
 			return false;
 		}
-		else if(n.value.equals(p))
-		{
+		if(n.value.equals(p)){
 			return true;
 		}
-		else if(key == p.x())
+		
+		if(n.key == n.value.x())
 		{
-			if(key < n.value.x())
-				return findAt(n.left, p, p.y());
+			if(p.x() < n.value.x())
+				return findAt(n.left, p);
 			else
-				return findAt(n.right, p, p.y());
+				return findAt(n.right, p);
 		}
 		else
 		{
-			if(key < n.value.y())
-				return findAt(n.left, p, p.x());
+			if(p.y() < n.value.y())
+				return findAt(n.left, p);
 			else
-				return findAt(n.left, p, p.x());
+				return findAt(n.right, p);
 		}
 	}
 	
@@ -100,10 +102,6 @@ public class KdTree {
 	
 	public Iterable<Point2D> range(RectHV rect)
 	{
-    	StdDraw.setPenColor(StdDraw.ORANGE);
-		StdDraw.filledCircle(root.value.x(), root.value.y(), 0.02);
-		StdDraw.setPenColor();
-		
 		return rangeAt(root, rect, new RectHV(0.0, 0.0, 1.0, 1.0));
 	}
 	
@@ -116,8 +114,8 @@ public class KdTree {
 		if(rect.contains(n.value))
 			points.add(n.value);
 		
-		if(n.key == n.value.x()){
-			
+		if(n.key == n.value.x())
+		{
 			//Vertical
 			RectHV left = new RectHV(searchRect.xmin(), searchRect.ymin(), n.key, searchRect.ymax());
 			RectHV right = new RectHV(n.key, searchRect.ymin(), searchRect.xmax(), searchRect.ymax());
@@ -129,7 +127,8 @@ public class KdTree {
 				points.addAll(rangeAt(n.right, rect, right));
 			}
 		}
-		else{
+		else
+		{
 			//Horizontal
 			RectHV top = new RectHV(searchRect.xmin(), n.key, searchRect.xmax(), searchRect.ymax());
 			RectHV bottom = new RectHV(searchRect.xmin(), searchRect.ymin(), searchRect.xmax(), n.key);
@@ -147,101 +146,89 @@ public class KdTree {
 	
    	public Point2D nearest(Point2D p)
    	{
-   		return new Point2D(0.0, 0.0);
+   		if(root != null)
+   			return nearestAt(root, p, root.value);
+   		else
+   			return null;
+   	}
+   	
+   	private Point2D nearestAt(Node n, Point2D p, Point2D best)
+   	{
+   		if(n == null)
+   			return best;
+   		
+   		if(p.distanceTo(n.value) < p.distanceTo(best))
+   			best = n.value;
+   		
+   		if(n.key == n.value.x()){
+   			if(p.x() < n.key){
+   				best = nearestAt(n.left, p, best);
+   				if(p.distanceTo(best) > Math.abs(n.key - p.x()))
+   					best = nearestAt(n.right, p, best);
+   			}
+   			else{
+   				best = 	nearestAt(n.right, p, best);
+   				if(p.distanceTo(best) > Math.abs(n.key - p.x()))
+   					best = nearestAt(n.left, p, best);
+   			}
+   		}
+   		else{
+   			if(p.y() < n.key){
+   				best = nearestAt(n.left, p, best);
+   				if(p.distanceTo(best) > Math.abs(n.key - p.y()))
+   					best = nearestAt(n.right, p, best);
+   			}
+   			else{
+   				best = 	nearestAt(n.right, p, best);
+   				if(p.distanceTo(best) > Math.abs(n.key - p.y()))
+   					best = nearestAt(n.left, p, best);
+   			}
+   		}
+   		
+   		return best;
    	}
     
-    /*******************************************************************************
-      *  Test client
-      ******************************************************************************/
     public static void main(String[] args) { 
-    	
-    	KdTree set = new KdTree();    	
-    	int pointCount = StdIn.readInt();
-    	RectHV rect = new RectHV(0.5, 0.1, 0.8, 0.9);
-    	Point2D point = new Point2D(0.6, 0.7);
-    	
-    	StdDraw.show(0);
-    	StdDraw.clear();
-    	
-    	for(int i=0; i < pointCount; i++){
-            double x = StdIn.readDouble(), y = StdIn.readDouble();
-            set.insert(new Point2D(x,y));
-            StdDraw.filledCircle(x, y, 0.01);
-    	}
-    	
-    	StdOut.println(set.isEmpty());
-    	
-    	StdOut.println(set.contains(new Point2D(0.5, 0.5)));
-    	
-    	Iterable<Point2D> inRect = set.range(rect);
-    	for(Point2D p : inRect){
-    		StdOut.println(p);
-    		StdDraw.setPenColor(StdDraw.GREEN);
-    		StdDraw.filledCircle(p.x(), p.y(), 0.01);
-    		StdDraw.setPenColor();
-    	}
-    	
-    	rect.draw();
-    	StdDraw.setPenColor(StdDraw.RED);
-    	StdDraw.filledCircle(point.x(), point.y(), 0.01);
-    	StdDraw.setPenColor();
-    	//StdDraw.line(point.x(), point.y(), closest.x(), closest.y());
-    	//StdDraw.filledCircle(closest.x(), closest.y(), 0.02);
-    	
-    	//Point2D closest = set.nearest(point);
-    	StdDraw.show(50);
-
-    	
-    	/*
         int nrOfRecangles = StdIn.readInt();
         int nrOfPointsCont = StdIn.readInt();
         int nrOfPointsNear = StdIn.readInt();
         RectHV[] rectangles = new RectHV[nrOfRecangles];
         Point2D[] pointsCont = new Point2D[nrOfPointsCont];
         Point2D[] pointsNear = new Point2D[nrOfPointsNear];
-        
         for(int i = 0; i < nrOfRecangles; i++)
         {
             rectangles[i] = new RectHV(StdIn.readDouble(),StdIn.readDouble(),StdIn.readDouble(),StdIn.readDouble());
         }
-        
         for(int i = 0; i < nrOfPointsCont; i++)
         {
             pointsCont[i] = new Point2D(StdIn.readDouble(),StdIn.readDouble());
         }
-        
         for(int i = 0; i < nrOfPointsNear; i++)
         {
             pointsNear[i] = new Point2D(StdIn.readDouble(),StdIn.readDouble());
         }
-        
         KdTree set = new KdTree();
         for (int i = 0; !StdIn.isEmpty(); i++) {
             double x = StdIn.readDouble(), y = StdIn.readDouble();
             set.insert(new Point2D(x,y));
         }
-        
-        for(int i = 0; i < nrOfRecangles; i++)
-        {
-		    // Query on rectangle i, sort the result, and print
-		    Iterable<Point2D> ptset = set.range(rectangles[i]);
-		    int ptcount=0;
-		    for (Point2D p : ptset)
-		    	ptcount++;
-		    
-		    Point2D[] ptarr = new Point2D[ptcount];
-		    int j=0;
-		    for (Point2D p : ptset) {
-		    	ptarr[j] = p;
-		    	j++;
-		    }
-		    
-		    Arrays.sort(ptarr);
-	        StdOut.println("Inside rectangle " + (i + 1) + ":"); 
+        for(int i = 0; i < nrOfRecangles; i++){
+	    // Query on rectangle i, sort the result, and print
+	    Iterable<Point2D> ptset = set.range(rectangles[i]);
+	    int ptcount=0;
+	    for (Point2D p : ptset)
+		ptcount++;
+	    Point2D[] ptarr = new Point2D[ptcount];
+	    int j=0;
+	    for (Point2D p : ptset) {
+		ptarr[j] = p;
+		j++;
+	    }
+	    Arrays.sort(ptarr);
+            StdOut.println("Inside rectangle " + (i + 1) + ":"); 
             for (j=0; j < ptcount; j++)
                 StdOut.println(ptarr[j]);
-        }
-        
+	}
         StdOut.println("Contain test:");
         for(int i = 0; i < nrOfPointsCont; i++)
         {
@@ -255,7 +242,6 @@ public class KdTree {
         }
         
         StdOut.println();
-        */
     }
    
 }
